@@ -50,6 +50,54 @@ flowchart LR
 | VirtualATE | 가상 전압 또는 직접 선택한 결과로 판정, 수락 CSV 기록 | LabVIEW 2026 Q1 32Bit |
 | 환경 센서 | DHT22 수집, 측정 상태·순번·경과시간, Modbus TCP 발행 | ESP32-S3-DevKitC-1 / SEN0137 / ESP-IDF 6.0.1 |
 
+## 운영 화면
+
+### LabVIEW 가상 검사기
+
+![LabVIEW VirtualATE 검사 운영 화면](05_IMAGE/readme/screenshots/labview_virtual_ate.png)
+
+가상 전압 3300 mV와 합격 범위 3000-3600 mV, 직전 요청 ID 1의 PASS 레코드가 표시된 새 검사 대기 화면입니다. 검사 조건, 활성 요청·결과, ATE 준비와 PLC 생존 상태, Modbus 접속 설정 및 CSV 경로를 한 화면에서 확인합니다.
+
+### CIMON SCADA 5개 주요 페이지
+
+**메인 운전은 README 상단에 표시했습니다.** 나머지 네 페이지는 아래에서 각각 펼쳐 볼 수 있습니다. 화면들은 서로 다른 시험 시점의 캡처입니다.
+
+<details>
+<summary>알람 이력 — 발생·해제·인식 기록과 수동 복구</summary>
+
+![CIMON 알람 이력 화면](05_IMAGE/readme/screenshots/alarm_history.png)
+
+P07 복구 후 현재 알람은 0이며, 과거 이력에는 알람 발생·해제·인식 기록이 남아 있습니다. 부저 확인 ACK와 고장 복구 RESET을 구분합니다.
+
+</details>
+
+<details>
+<summary>검사 현황 — 최근 5건과 PASS / FAIL / RETEST 집계</summary>
+
+![CIMON 검사 현황 화면](05_IMAGE/readme/screenshots/inspection_history.png)
+
+AE05에서 확인한 PASS, FAIL, RETEST 및 하한·상한 PASS의 최근 5건과 수량 집계입니다. PLC 수락 CSV를 읽어 요청 ID, 판정 조건과 결과를 조회합니다.
+
+</details>
+
+<details>
+<summary>환경 통신 — 실측 온습도와 FX·LS 허가 및 중계 상태</summary>
+
+![CIMON 환경 통신 화면](05_IMAGE/readme/screenshots/environment_communication.png)
+
+AE10 복구 후 온도 25.90 °C, 습도 41.60 %RH와 FX·LS 환경 허가 ON을 확인한 화면입니다. 자료 유효성, 시작 준비, 중계 오류와 FX 발행·LS 수신 워드를 함께 표시합니다.
+
+</details>
+
+<details>
+<summary>센서 확인 — ESP32 원시값과 FX 준비·적용 ACK</summary>
+
+![CIMON 센서 확인 화면](05_IMAGE/readme/screenshots/sensor_bridge.png)
+
+실제 온습도 원시값과 FX에 전달하는 준비 ID, 적용 ACK, 발행번호 및 자료 경과시간을 구분해서 표시합니다. 거래 진행 중의 대기 단계도 화면에 표시합니다.
+
+</details>
+
 ## 공정과 운전 정책
 
 투입 감지 후 검사 위치로 이동하고 클램프를 닫습니다. LS가 요청 ID와 함께 검사를 요청하면 VirtualATE가 가상 검사 결과를 반환합니다. LS가 결과를 수락한 뒤 클램프를 열고 PASS, FAIL, RETEST 중 해당 게이트로 분류·배출한 다음 완료 수량을 집계합니다.
@@ -90,21 +138,6 @@ flowchart LR
 P17은 알람103, 공정 차단과 수동 복구 기능을 판정했습니다. 시험 중 대기 시간을 진행시켰으므로 설정 120초의 실제 경과시간을 측정한 결과로 보지 않습니다. 선택 시험 AE06과 FX01은 이번 완료 범위에 포함하지 않았습니다.
 
 [시험 자료 안내](06_TEST/README.md)에서 원장, 증거와 계획·절차 이력의 관계를 확인할 수 있습니다. 시험 기준선 BL-001과 원본 영상은 로컬 보관하고, 저장소에는 기록 문서·캡처·CSV 및 별도의 영상 압축 사본을 제공합니다. 압축 사본은 원장에 적힌 원본 영상과 파일명·크기가 다를 수 있습니다.
-
-## 화면과 증거
-
-<details>
-<summary>최근 검사 5건과 실측 센서 전달 화면</summary>
-
-![최근 검사 5건과 수량 집계](05_IMAGE/readme/screenshots/inspection_history.png)
-
-AE05에서 확인한 PASS, FAIL, RETEST 및 하한·상한 PASS의 최근 5건과 수량 집계입니다.
-
-![실제 센서 값과 FX 준비 및 적용 ACK](05_IMAGE/readme/screenshots/sensor_bridge.png)
-
-실제 온습도 원시값과 FX에 전달하는 준비 ID, 적용 ACK, 발행번호 및 자료 경과시간을 구분해서 표시합니다. 거래 진행 중의 대기 단계도 화면에 표시합니다.
-
-</details>
 
 ## 저장소 구성
 

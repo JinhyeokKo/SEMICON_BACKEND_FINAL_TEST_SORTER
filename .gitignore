@@ -37,15 +37,6 @@ compile_commands.json
 /06_TEST/04_EVIDENCE/**/video/*
 !/06_TEST/04_EVIDENCE/**/video/encoded/
 
-# Publish final drawings and tables; keep earlier working sets locally
-/01_CAD/01_DRAFT/
-/01_CAD/CAD_R1/
-/01_CAD/*.wdp
-/01_CAD/*.aepx
-/01_CAD/*.cdc
-/02_PDF/01_DRAFT/
-/03_EXPORT/01_DRAFT/
-
 # Reference material requires a separate distribution decision
 /04_REFERENCE/*
 !/04_REFERENCE/README.md
