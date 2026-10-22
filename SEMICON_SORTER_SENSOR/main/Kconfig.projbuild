@@ -1,0 +1,18 @@
+menu "Sensor network"
+
+    config SENSOR_WIFI_SSID
+        string "Wi-Fi SSID (2.4 GHz)"
+        default ""
+        help
+            Empty disables Wi-Fi and Modbus while the sensor keeps running.
+            ESP32-S3 uses a 2.4 GHz network. Use a DHCP reservation for a stable IP.
+
+    config SENSOR_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+        help
+            Empty selects an open network. Otherwise use a WPA2/WPA3-compatible
+            password (8 to 63 characters or a 64-character hexadecimal PSK).
+            This value is saved in sdkconfig and firmware; do not publish them.
+
+endmenu

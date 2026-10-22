@@ -1,0 +1,4 @@
+captured_utc,request_id,mode,voltage_mV,low_mV,high_mV,result_code,accepted_utc,accepted_id
+2026-10-18T13:17:10Z,1,AUTO,3300,3000,3600,1,2026-10-18T13:17:11Z,1
+2026-10-18T13:17:29Z,2,AUTO,2900,3000,3600,2,2026-10-18T13:17:30Z,2
+2026-10-18T13:17:43Z,3,MANUAL,,,,3,2026-10-18T13:17:45Z,3

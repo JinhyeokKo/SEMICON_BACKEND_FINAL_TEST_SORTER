@@ -1,0 +1,673 @@
+Sub SensorFxBridgeLoop()
+    Dim sourceDevice As String
+    Dim diag113 As String
+    Dim diagCommitAt As Double
+    Dim diagCommitReturnedAt As Double
+    Dim diagTotal As Double
+    Dim diagCommitWait As Double
+    Dim diagCommitCall As Double
+    Dim fxDevice As String
+    Dim message As String
+    Dim fault As Long
+    Dim stopRequested As Long
+    Dim phase As Long
+    Dim wordSwap As Long
+    Dim sourceComm As Long
+    Dim fxComm As Long
+    Dim fxLive As Long
+    Dim prepared As Long
+    Dim ack As Long
+    Dim resetAck As Long
+    Dim fxHigh As Long
+    Dim resetPrevious As Long
+    Dim resetToken As Long
+    Dim txHigh As Long
+    Dim txId As Long
+    Dim frameOK As Long
+    Dim sourceNew As Long
+    Dim sourceSeen As Long
+    Dim sourceBootLast As Long
+    Dim sourceGenLast As Long
+    Dim deltaGen As Long
+    Dim previewOK As Long
+    Dim previewReady As Long
+    Dim zerosOK As Long
+    Dim prepareAttempts As Long
+    Dim reserveTicks As Long
+    Dim acceptedCount As Long
+    Dim nowS As Double
+    Dim startAt As Double
+    Dim resetAt As Double
+    Dim sourceAt As Double
+    Dim sourceAge As Double
+    Dim phaseAt As Double
+    Dim transactionAt As Double
+    Dim transactionAge As Double
+    Dim phaseAge As Double
+    Dim captureAt As Double
+    Dim elapsed As Double
+    Dim tickAge As Double
+    Dim p0 As Double
+    Dim high0 As Double
+    Dim low0 As Double
+    Dim g0 As Long
+    Dim r0 As Long
+    Dim v0 As Long
+    Dim preview0 As Double
+    Dim expected0 As Double
+    Dim p1 As Double
+    Dim high1 As Double
+    Dim low1 As Double
+    Dim g1 As Long
+    Dim r1 As Long
+    Dim v1 As Long
+    Dim preview1 As Double
+    Dim expected1 As Double
+    Dim p2 As Double
+    Dim high2 As Double
+    Dim low2 As Double
+    Dim g2 As Long
+    Dim r2 As Long
+    Dim v2 As Long
+    Dim preview2 As Double
+    Dim expected2 As Double
+    Dim p3 As Double
+    Dim high3 As Double
+    Dim low3 As Double
+    Dim g3 As Long
+    Dim r3 As Long
+    Dim v3 As Long
+    Dim preview3 As Double
+    Dim expected3 As Double
+    Dim p4 As Double
+    Dim high4 As Double
+    Dim low4 As Double
+    Dim g4 As Long
+    Dim r4 As Long
+    Dim v4 As Long
+    Dim preview4 As Double
+    Dim expected4 As Double
+    Dim p5 As Double
+    Dim high5 As Double
+    Dim low5 As Double
+    Dim g5 As Long
+    Dim r5 As Long
+    Dim v5 As Long
+    Dim preview5 As Double
+    Dim expected5 As Double
+    Dim p6 As Double
+    Dim high6 As Double
+    Dim low6 As Double
+    Dim g6 As Long
+    Dim r6 As Long
+    Dim v6 As Long
+    Dim preview6 As Double
+    Dim expected6 As Double
+    Dim p7 As Double
+    Dim high7 As Double
+    Dim low7 As Double
+    Dim g7 As Long
+    Dim r7 As Long
+    Dim v7 As Long
+    Dim preview7 As Double
+    Dim expected7 As Double
+
+    If GetTagVal("FXTEL.SENSOR_BRIDGE_RUNNING") <> 0 Then Exit Sub
+    SetTagVal "FXTEL.SENSOR_BRIDGE_LAST_ERR", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_READY", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_ACK_PENDING", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_FRAME_OK", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPT_COUNT", 0
+    fault = 0
+    diag113 = ""
+    diagCommitAt = -1
+    diagCommitReturnedAt = -1
+    stopRequested = 0
+    phase = 10
+    sourceSeen = 0
+    sourceBootLast = 0
+    sourceGenLast = 0
+    acceptedCount = 0
+    txId = 0
+    resetToken = 0
+    startAt = Timer
+    sourceAt = startAt
+    message = "FX 실행 및 실수신 태그 확인 대기"
+    sourceDevice = CStr(GetTagValEx("ESP.ESP_PACK_MAP", "DEVICE"))
+    fxDevice = CStr(GetTagValEx("FXTEL.SENSOR_RX_W0", "DEVICE"))
+    wordSwap = CLng(GetTagVal("FXTEL.SENSOR_BRIDGE_WORD_SWAP"))
+    If wordSwap <> 0 And wordSwap <> 1 Then fault = 101
+    If sourceDevice = "" Or fxDevice = "" Then fault = 101
+    txHigh = CLng(GetTagVal("FXTEL.SENSOR_BRIDGE_TX_HIGH_WATER"))
+    If txHigh < 0 Or txHigh > 32000 Then fault = 101
+
+    If GetTagValEx("ESP.ESP_PACK_MAP", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_MAP", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_BOOT", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_BOOT", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_SEQ", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_SEQ", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_TEMP", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_TEMP", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_RH", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_RH", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_VALID", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_VALID", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_STATUS", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_STATUS", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("ESP.ESP_PACK_AGE", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("ESP.ESP_PACK_AGE", "DEVICE")) <> sourceDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W0", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W0", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W1", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W1", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W2", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W2", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W3", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W3", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W4", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W4", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W5", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W5", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W6", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W6", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.SENSOR_RX_W7", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.SENSOR_RX_W7", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.STAGE_PREPARE", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.STAGE_PREPARE", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.STAGE_COMMIT", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.STAGE_COMMIT", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.RESET_REQ", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.RESET_REQ", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREPARED_ID", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREPARED_ID", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_ACK_ID", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_ACK_ID", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_RESET_ACK", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_RESET_ACK", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_RX_HIGH_WATER_ID", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_RX_HIGH_WATER_ID", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW0", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW0", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW1", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW1", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW2", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW2", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW3", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW3", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW4", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW4", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW5", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW5", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW6", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW6", "DEVICE")) <> fxDevice Then fault = 101
+    If GetTagValEx("FXTEL.FX_PREVIEW7", "REALTAG") <> 1 Then fault = 101
+    If CStr(GetTagValEx("FXTEL.FX_PREVIEW7", "DEVICE")) <> fxDevice Then fault = 101
+
+    If fault = 0 Then SetTagVal "FXTEL.SENSOR_BRIDGE_RUNNING", 1
+    While fault = 0 And stopRequested = 0
+        nowS = Timer
+        stopRequested = CLng(GetTagVal("FXTEL.SENSOR_BRIDGE_STOP"))
+        sourceComm = CommStatus(sourceDevice)
+        fxComm = CommStatus(fxDevice)
+        fxLive = CLng(GetTagVal("ENVIRONMENT.ENV_FX_DATA_OK"))
+        prepared = CLng(GetTagVal("FXTEL.FX_PREPARED_ID"))
+        ack = CLng(GetTagVal("FXTEL.FX_ACK_ID"))
+        resetAck = CLng(GetTagVal("FXTEL.FX_RESET_ACK"))
+        fxHigh = CLng(GetTagVal("FXTEL.FX_RX_HIGH_WATER_ID"))
+
+        If phase >= 20 And stopRequested = 0 Then
+            If sourceComm <> 0 Then fault = 102
+            If fxComm <> 0 Then fault = 103
+            If fxLive <> 1 Then fault = 104
+        End If
+
+        sourceNew = 0
+        frameOK = 0
+        If phase >= 30 And fault = 0 And stopRequested = 0 Then
+            GoSub ReadSource
+            If frameOK = 1 Then
+                If sourceBootLast = 0 Or r1 <> sourceBootLast Then
+                    ' New boot: first complete frame is baseline, never permission.
+                    sourceBootLast = r1
+                    sourceGenLast = g0
+                    sourceSeen = 0
+                    sourceAt = nowS
+                    SetTagVal "FXTEL.SENSOR_BRIDGE_READY", 0
+                Else
+                    deltaGen = g0 - sourceGenLast
+                    If deltaGen < 0 Then deltaGen = deltaGen + 32000
+                    If deltaGen >= 1 And deltaGen <= 15999 Then
+                        sourceGenLast = g0
+                        sourceAt = nowS
+                        sourceSeen = 1
+                        sourceNew = 1
+                    End If
+                End If
+                SetTagVal "FXTEL.SENSOR_BRIDGE_SOURCE_GEN", sourceGenLast
+            End If
+            sourceAge = nowS - sourceAt
+            If sourceAge < 0 Then sourceAge = sourceAge + 86400
+            SetTagVal "FXTEL.SENSOR_BRIDGE_SOURCE_AGE_S", sourceAge
+            SetTagVal "FXTEL.SENSOR_BRIDGE_FRAME_OK", frameOK
+            If sourceAge >= 4.0 Then fault = 108
+        End If
+
+        If (phase = 40 Or phase = 50) And fault = 0 Then
+            transactionAge = nowS - transactionAt
+            If transactionAge < 0 Then transactionAge = transactionAge + 86400
+            If transactionAge >= 4.0 Then fault = 113
+        End If
+
+        If fault = 0 And stopRequested = 0 Then
+            Select Case phase
+                Case 10
+                    elapsed = nowS - startAt
+                    If elapsed < 0 Then elapsed = elapsed + 86400
+                    If elapsed >= 5.0 Then fault = 114
+                    If fxComm = 0 And sourceComm = 0 And fxLive = 1 Then
+                        If prepared >= 0 And prepared <= 32000 And ack >= 0 And ack <= 32000 And resetAck >= 0 And resetAck <= 32000 And fxHigh >= 0 And fxHigh <= 32000 Then
+                            If prepared > txHigh Then txHigh = prepared
+                            If ack > txHigh Then txHigh = ack
+                            If fxHigh > txHigh Then txHigh = fxHigh
+                            SetTagVal "FXTEL.SENSOR_BRIDGE_TX_HIGH_WATER", txHigh
+                            resetPrevious = resetAck
+                            resetToken = resetPrevious + 1
+                            If resetToken > 32000 Then resetToken = 1
+                            SetTagVal "FXTEL.RESET_REQ", resetToken
+                            SetTagVal "FXTEL.SENSOR_BRIDGE_RESET_ID", resetToken
+                            resetAt = nowS
+                            phase = 20
+                            message = "FX 초기화 요청 / 새 RESET_ACK 전이 대기"
+                        End If
+                    End If
+
+                Case 20
+                    elapsed = nowS - resetAt
+                    If elapsed < 0 Then elapsed = elapsed + 86400
+                    If resetAck = resetToken And resetAck <> resetPrevious Then
+                        phase = 25
+                        message = "FX 준비 ID·적용 ACK·미리보기 초기화 확인"
+                    ElseIf elapsed >= 2.0 Then
+                        fault = 105
+                    End If
+
+                Case 25
+                    zerosOK = 1
+                    If prepared <> 0 Or ack <> 0 Then zerosOK = 0
+
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW0")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW1")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW2")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW3")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW4")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW5")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW6")) <> 0 Then zerosOK = 0
+                    If CDbl(GetTagVal("FXTEL.FX_PREVIEW7")) <> 0 Then zerosOK = 0
+
+                    elapsed = nowS - resetAt
+                    If elapsed < 0 Then elapsed = elapsed + 86400
+                    If zerosOK = 1 Then
+                        sourceBootLast = 0
+                        sourceGenLast = 0
+                        sourceSeen = 0
+                        sourceAt = nowS
+                        phase = 30
+                        message = "ESP 첫 완전 프레임 기준값 / 다음 신규 세대 확인 대기"
+                    ElseIf elapsed >= 3.0 Then
+                        fault = 106
+                    End If
+
+                Case 30
+                    If sourceNew = 1 And frameOK = 1 Then
+                        captureAt = nowS
+
+                        v0 = r0
+                        v1 = r1
+                        v2 = r2
+                        v3 = r3
+                        v4 = r4
+                        v5 = r5
+                        v6 = r6
+                        v7 = r7
+
+                        ' One second cache allowance + two second entire transaction budget.
+                        elapsed = Timer - captureAt
+                        If elapsed < 0 Then elapsed = elapsed + 86400
+                        tickAge = elapsed * 10.0
+                        reserveTicks = CLng(Fix(tickAge))
+                        If tickAge > reserveTicks Then reserveTicks = reserveTicks + 1
+                        v7 = v7 + reserveTicks + 50
+                        If v7 > 32000 Then v7 = 32000
+                        If v6 = 0 And v7 >= 120 Then
+                            v5 = 0
+                            v6 = 5
+                        End If
+                        GoSub NewTransactionId
+                        If fault = 0 Then
+
+                            SetTagVal "FXTEL.SENSOR_RX_W0", v0
+                            SetTagVal "FXTEL.SENSOR_RX_W1", v1
+                            SetTagVal "FXTEL.SENSOR_RX_W2", v2
+                            SetTagVal "FXTEL.SENSOR_RX_W3", v3
+                            SetTagVal "FXTEL.SENSOR_RX_W4", v4
+                            SetTagVal "FXTEL.SENSOR_RX_W5", v5
+                            SetTagVal "FXTEL.SENSOR_RX_W6", v6
+                            SetTagVal "FXTEL.SENSOR_RX_W7", v7
+
+                            SetTagVal "FXTEL.STAGE_PREPARE", txId
+                            transactionAt = nowS
+                            diagCommitAt = -1
+                            diagCommitReturnedAt = -1
+                            phaseAt = nowS
+                            prepareAttempts = 1
+                            phase = 40
+                            SetTagVal "FXTEL.SENSOR_BRIDGE_READY", 1
+                            SetTagVal "FXTEL.SENSOR_BRIDGE_ACK_PENDING", 1
+                            message = "8워드 준비 요청 / ID가 결합된 PLC 미리보기 확인"
+                        End If
+                    End If
+
+                Case 40
+                    phaseAge = nowS - phaseAt
+                    If phaseAge < 0 Then phaseAge = phaseAge + 86400
+                    previewOK = 0
+                    previewReady = 0
+                    If prepared = txId Then GoSub CheckPreview
+                    If previewOK = 1 Then
+                        diagCommitAt = Timer
+                        SetTagVal "FXTEL.STAGE_COMMIT", txId
+                        diagCommitReturnedAt = Timer
+                        phase = 50
+                        message = "PLC 미리보기 8개 일치 / 적용 ACK 확인 대기"
+                    ElseIf prepared = txId And previewReady = 1 And previewOK = 0 Then
+                        ' Retry only after all eight mirrors carry this ID and prove wrong raw data.
+                        ' Incomplete/late previews wait for the same ID until the 2-second deadline.
+                        ' Data remains immutable. A new prepare ID copies all eight words again.
+                        GoSub NewTransactionId
+                        If fault = 0 Then
+                            SetTagVal "FXTEL.STAGE_PREPARE", txId
+                            phaseAt = nowS
+                            prepareAttempts = prepareAttempts + 1
+                            message = "준비 미리보기 재확인 / 같은 데이터로 새 준비 ID 요청"
+                        End If
+					ElseIf prepared < txId And phaseAge >= 1.0 And prepareAttempts < 3 Then
+                        SetTagVal "STAGE_PREPARE", txId
+                        phaseAt = nowS
+                        prepareAttempts = prepareAttempts + 1
+                        message = "준비 요청 재전송 / 같은 ID의 PLC 준비 응답 대기"
+                    End If
+
+                Case 50
+                    If ack = txId Then
+                        acceptedCount = acceptedCount + 1
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPT_COUNT", acceptedCount
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_BOOT", v1
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_SEQ", v2
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_TEMP_X100", v3
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_RH_X100", v4
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_VALID", v5
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_STATUS", v6
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACCEPTED_AGE_100MS", v7
+                        SetTagVal "FXTEL.SENSOR_BRIDGE_ACK_PENDING", 0
+                        phase = 30
+                        message = "실측 프레임 적용 ACK 확인 / 다음 신규 발행 세대 대기"
+                    End If
+            End Select
+        End If
+        SetTagVal "FXTEL.SENSOR_BRIDGE_PHASE", phase
+        SetTagVal "FXTEL.SENSOR_BRIDGE_MESSAGE", message
+        Sleep 100
+    Wend
+
+    ' Save failure context before RESET clears the FX response words.
+    If fault = 113 Then
+        diagTotal = Timer - transactionAt
+        If diagTotal < 0 Then diagTotal = diagTotal + 86400
+        diag113 = "113 PHASE=" & CStr(phase) & " TX=" & CStr(txId) & " PREP=" & CStr(prepared) & " ACK=" & CStr(ack)
+        diag113 = diag113 & " READACK=" & CStr(GetTagVal("FXTEL.FX_ACK_ID"))
+        diag113 = diag113 & " TOTAL_S=" & CStr(Fix(diagTotal * 1000.0) / 1000.0)
+		diag113 = diag113 & " TRY=" & CStr(prepareAttempts)
+        diag113 = diag113 & " FXHIGH=" & CStr(fxHigh)
+        diag113 = diag113 & " STAGEVAL=" & CStr(CLng(GetTagVal("STAGE_PREPARE")))
+        If diagCommitAt >= 0 Then
+            diagCommitWait = Timer - diagCommitAt
+            If diagCommitWait < 0 Then diagCommitWait = diagCommitWait + 86400
+            diagCommitCall = diagCommitReturnedAt - diagCommitAt
+            If diagCommitCall < 0 Then diagCommitCall = diagCommitCall + 86400
+            diag113 = diag113 & " COMMIT_S=" & CStr(Fix(diagCommitWait * 1000.0) / 1000.0)
+            diag113 = diag113 & " CALL_MS=" & CStr(Fix(diagCommitCall * 1000.0))
+        Else
+            diag113 = diag113 & " COMMIT=NOT_SENT"
+        End If
+    End If
+
+    ' Best effort inhibit request. Never resend COMMIT after a fault or operator stop.
+    If fault <> 101 And fxDevice <> "" Then
+        If CommStatus(fxDevice) = 0 Then
+            resetAck = CLng(GetTagVal("FXTEL.FX_RESET_ACK"))
+            If resetAck >= 0 And resetAck <= 32000 Then
+                resetToken = resetAck + 1
+                If resetToken > 32000 Then resetToken = 1
+                SetTagVal "FXTEL.RESET_REQ", resetToken
+                SetTagVal "FXTEL.SENSOR_BRIDGE_RESET_ID", resetToken
+            End If
+        End If
+    End If
+    SetTagVal "FXTEL.SENSOR_BRIDGE_RUNNING", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_READY", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_ACK_PENDING", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_FRAME_OK", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_PHASE", 0
+    SetTagVal "FXTEL.SENSOR_BRIDGE_LAST_ERR", fault
+    If stopRequested <> 0 Then
+        SetTagVal "FXTEL.SENSOR_BRIDGE_MESSAGE", "사용자 정지 / FX 초기화 요청; 허가 OFF 확인"
+    ElseIf fault = 113 Then
+        SetTagVal "FXTEL.SENSOR_BRIDGE_MESSAGE", diag113
+    Else
+        SetTagVal "FXTEL.SENSOR_BRIDGE_MESSAGE", "중계 오류 " & CStr(fault) & " / 원인 해결 후 시작 버튼으로 재시작"
+    End If
+    Exit Sub
+
+ReadSource:
+    frameOK = 1
+
+    p0 = CDbl(GetTagVal("ESP.ESP_PACK_MAP"))
+    If p0 < 0 Or p0 > 4294967295.0 Or p0 <> Fix(p0) Then frameOK = 0
+
+    p1 = CDbl(GetTagVal("ESP.ESP_PACK_BOOT"))
+    If p1 < 0 Or p1 > 4294967295.0 Or p1 <> Fix(p1) Then frameOK = 0
+
+    p2 = CDbl(GetTagVal("ESP.ESP_PACK_SEQ"))
+    If p2 < 0 Or p2 > 4294967295.0 Or p2 <> Fix(p2) Then frameOK = 0
+
+    p3 = CDbl(GetTagVal("ESP.ESP_PACK_TEMP"))
+    If p3 < 0 Or p3 > 4294967295.0 Or p3 <> Fix(p3) Then frameOK = 0
+
+    p4 = CDbl(GetTagVal("ESP.ESP_PACK_RH"))
+    If p4 < 0 Or p4 > 4294967295.0 Or p4 <> Fix(p4) Then frameOK = 0
+
+    p5 = CDbl(GetTagVal("ESP.ESP_PACK_VALID"))
+    If p5 < 0 Or p5 > 4294967295.0 Or p5 <> Fix(p5) Then frameOK = 0
+
+    p6 = CDbl(GetTagVal("ESP.ESP_PACK_STATUS"))
+    If p6 < 0 Or p6 > 4294967295.0 Or p6 <> Fix(p6) Then frameOK = 0
+
+    p7 = CDbl(GetTagVal("ESP.ESP_PACK_AGE"))
+    If p7 < 0 Or p7 > 4294967295.0 Or p7 <> Fix(p7) Then frameOK = 0
+
+    If frameOK = 1 Then
+
+        high0 = Fix(p0 / 65536.0)
+        low0 = p0 - high0 * 65536.0
+        If wordSwap = 0 Then
+            g0 = CLng(high0)
+            r0 = CLng(low0)
+        Else
+            g0 = CLng(low0)
+            r0 = CLng(high0)
+        End If
+        high1 = Fix(p1 / 65536.0)
+        low1 = p1 - high1 * 65536.0
+        If wordSwap = 0 Then
+            g1 = CLng(high1)
+            r1 = CLng(low1)
+        Else
+            g1 = CLng(low1)
+            r1 = CLng(high1)
+        End If
+        high2 = Fix(p2 / 65536.0)
+        low2 = p2 - high2 * 65536.0
+        If wordSwap = 0 Then
+            g2 = CLng(high2)
+            r2 = CLng(low2)
+        Else
+            g2 = CLng(low2)
+            r2 = CLng(high2)
+        End If
+        high3 = Fix(p3 / 65536.0)
+        low3 = p3 - high3 * 65536.0
+        If wordSwap = 0 Then
+            g3 = CLng(high3)
+            r3 = CLng(low3)
+        Else
+            g3 = CLng(low3)
+            r3 = CLng(high3)
+        End If
+        high4 = Fix(p4 / 65536.0)
+        low4 = p4 - high4 * 65536.0
+        If wordSwap = 0 Then
+            g4 = CLng(high4)
+            r4 = CLng(low4)
+        Else
+            g4 = CLng(low4)
+            r4 = CLng(high4)
+        End If
+        high5 = Fix(p5 / 65536.0)
+        low5 = p5 - high5 * 65536.0
+        If wordSwap = 0 Then
+            g5 = CLng(high5)
+            r5 = CLng(low5)
+        Else
+            g5 = CLng(low5)
+            r5 = CLng(high5)
+        End If
+        high6 = Fix(p6 / 65536.0)
+        low6 = p6 - high6 * 65536.0
+        If wordSwap = 0 Then
+            g6 = CLng(high6)
+            r6 = CLng(low6)
+        Else
+            g6 = CLng(low6)
+            r6 = CLng(high6)
+        End If
+        high7 = Fix(p7 / 65536.0)
+        low7 = p7 - high7 * 65536.0
+        If wordSwap = 0 Then
+            g7 = CLng(high7)
+            r7 = CLng(low7)
+        Else
+            g7 = CLng(low7)
+            r7 = CLng(high7)
+        End If
+        If g0 < 1 Or g0 > 32000 Then frameOK = 0
+
+        If g1 <> g0 Then frameOK = 0
+        If g2 <> g0 Then frameOK = 0
+        If g3 <> g0 Then frameOK = 0
+        If g4 <> g0 Then frameOK = 0
+        If g5 <> g0 Then frameOK = 0
+        If g6 <> g0 Then frameOK = 0
+        If g7 <> g0 Then frameOK = 0
+        If r3 >= 32768 Then r3 = r3 - 65536
+        If r0 <> 1 Then frameOK = 0
+        If r1 < 1 Or r1 > 32000 Then frameOK = 0
+        If r2 < 0 Or r2 > 32000 Then frameOK = 0
+        If r3 < -4000 Or r3 > 8000 Then frameOK = 0
+        If r4 < 0 Or r4 > 10000 Then frameOK = 0
+        If r5 <> 0 And r5 <> 1 Then frameOK = 0
+        If r6 < 0 Or r6 > 5 Then frameOK = 0
+        If r7 < 0 Or r7 > 32000 Then frameOK = 0
+        If r6 = 0 Then
+            If r5 <> 1 Or r2 = 0 Or r7 >= 60 Then frameOK = 0
+        Else
+            If r5 <> 0 Then frameOK = 0
+            If r6 = 1 And r2 <> 0 Then frameOK = 0
+            If r6 = 5 And (r2 = 0 Or r7 < 60) Then frameOK = 0
+        End If
+    End If
+    Return
+
+NewTransactionId:
+    If txHigh >= 32000 Then
+        fault = 109
+    Else
+        txHigh = txHigh + 1
+        txId = txHigh
+        SetTagVal "FXTEL.SENSOR_BRIDGE_TX_HIGH_WATER", txHigh
+        SetTagVal "FXTEL.SENSOR_BRIDGE_TX_ID", txId
+    End If
+    Return
+
+CheckPreview:
+    previewOK = 1
+    previewReady = 1
+
+    expected0 = CDbl(v0)
+    If expected0 < 0 Then expected0 = expected0 + 65536.0
+    expected0 = CDbl(txId) * 65536.0 + expected0
+    preview0 = CDbl(GetTagVal("FXTEL.FX_PREVIEW0"))
+    If preview0 <> expected0 Then previewOK = 0
+    If preview0 < 0 Or preview0 > 4294967295.0 Then previewReady = 0
+    If Fix(preview0 / 65536.0) <> txId Then previewReady = 0
+    expected1 = CDbl(v1)
+    If expected1 < 0 Then expected1 = expected1 + 65536.0
+    expected1 = CDbl(txId) * 65536.0 + expected1
+    preview1 = CDbl(GetTagVal("FXTEL.FX_PREVIEW1"))
+    If preview1 <> expected1 Then previewOK = 0
+    If preview1 < 0 Or preview1 > 4294967295.0 Then previewReady = 0
+    If Fix(preview1 / 65536.0) <> txId Then previewReady = 0
+    expected2 = CDbl(v2)
+    If expected2 < 0 Then expected2 = expected2 + 65536.0
+    expected2 = CDbl(txId) * 65536.0 + expected2
+    preview2 = CDbl(GetTagVal("FXTEL.FX_PREVIEW2"))
+    If preview2 <> expected2 Then previewOK = 0
+    If preview2 < 0 Or preview2 > 4294967295.0 Then previewReady = 0
+    If Fix(preview2 / 65536.0) <> txId Then previewReady = 0
+    expected3 = CDbl(v3)
+    If expected3 < 0 Then expected3 = expected3 + 65536.0
+    expected3 = CDbl(txId) * 65536.0 + expected3
+    preview3 = CDbl(GetTagVal("FXTEL.FX_PREVIEW3"))
+    If preview3 <> expected3 Then previewOK = 0
+    If preview3 < 0 Or preview3 > 4294967295.0 Then previewReady = 0
+    If Fix(preview3 / 65536.0) <> txId Then previewReady = 0
+    expected4 = CDbl(v4)
+    If expected4 < 0 Then expected4 = expected4 + 65536.0
+    expected4 = CDbl(txId) * 65536.0 + expected4
+    preview4 = CDbl(GetTagVal("FXTEL.FX_PREVIEW4"))
+    If preview4 <> expected4 Then previewOK = 0
+    If preview4 < 0 Or preview4 > 4294967295.0 Then previewReady = 0
+    If Fix(preview4 / 65536.0) <> txId Then previewReady = 0
+    expected5 = CDbl(v5)
+    If expected5 < 0 Then expected5 = expected5 + 65536.0
+    expected5 = CDbl(txId) * 65536.0 + expected5
+    preview5 = CDbl(GetTagVal("FXTEL.FX_PREVIEW5"))
+    If preview5 <> expected5 Then previewOK = 0
+    If preview5 < 0 Or preview5 > 4294967295.0 Then previewReady = 0
+    If Fix(preview5 / 65536.0) <> txId Then previewReady = 0
+    expected6 = CDbl(v6)
+    If expected6 < 0 Then expected6 = expected6 + 65536.0
+    expected6 = CDbl(txId) * 65536.0 + expected6
+    preview6 = CDbl(GetTagVal("FXTEL.FX_PREVIEW6"))
+    If preview6 <> expected6 Then previewOK = 0
+    If preview6 < 0 Or preview6 > 4294967295.0 Then previewReady = 0
+    If Fix(preview6 / 65536.0) <> txId Then previewReady = 0
+    expected7 = CDbl(v7)
+    If expected7 < 0 Then expected7 = expected7 + 65536.0
+    expected7 = CDbl(txId) * 65536.0 + expected7
+    preview7 = CDbl(GetTagVal("FXTEL.FX_PREVIEW7"))
+    If preview7 <> expected7 Then previewOK = 0
+    If preview7 < 0 Or preview7 > 4294967295.0 Then previewReady = 0
+    If Fix(preview7 / 65536.0) <> txId Then previewReady = 0
+    Return
+End Sub

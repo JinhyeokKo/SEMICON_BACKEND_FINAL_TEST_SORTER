@@ -1,0 +1,82 @@
+# Local credentials and environment-specific ESP-IDF configuration
+**/sdkconfig
+**/sdkconfig.old
+**/sdkconfig.local
+**/.env
+**/.env.*
+!**/.env.example
+
+# Generated builds, dependencies and development caches
+**/build/
+**/managed_components/
+**/.espressif/
+**/components/.idf/
+**/.cache/
+**/.clangd/
+**/.clangd
+**/.vscode/
+**/.idea/
+**/__pycache__/
+**/.venv/
+**/venv/
+*.pyc
+*.pyo
+*.o
+*.obj
+*.elf
+*.bin
+*.map
+*.exe
+CMakeCache.txt
+compile_commands.json
+
+# Private frozen test baseline remains a local archive
+/06_TEST/01_PLAN/BASELINE_BL-001/
+
+# Keep encoded demonstration copies; exclude the original large videos
+/06_TEST/04_EVIDENCE/**/video/*
+!/06_TEST/04_EVIDENCE/**/video/encoded/
+
+# Publish final drawings and tables; keep earlier working sets locally
+/01_CAD/01_DRAFT/
+/01_CAD/CAD_R1/
+/01_CAD/*.wdp
+/01_CAD/*.aepx
+/01_CAD/*.cdc
+/02_PDF/01_DRAFT/
+/03_EXPORT/01_DRAFT/
+
+# Reference material requires a separate distribution decision
+/04_REFERENCE/*
+!/04_REFERENCE/README.md
+
+# Runtime data and tool-local state
+/SEMICON_SORTER_ATE/logs/
+/SEMICON_SORTER_HMI/ALOG/
+/SEMICON_SORTER_HMI/DLOG/
+*.log
+*.Log
+*.LOG
+*.state
+*.UserState
+*.lvlps
+*.aliases
+*.ldb
+*.LDB
+*.~db
+*.~DB
+
+# Backups, locks and temporary files
+*.bak
+*.BAK
+*.bak[0-9]
+*.xgwx_bkx*
+*.dwl
+*.dwl2
+*.tmp
+*.temp
+*~
+~$*
+.DS_Store
+Thumbs.db
+Desktop.ini

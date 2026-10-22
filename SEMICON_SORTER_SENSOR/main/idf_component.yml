@@ -1,0 +1,5 @@
+dependencies:
+  idf:
+    version: '>=6.0'
+  esp-idf-lib/dht: ^1.2.0
+  espressif/esp-modbus: '2.1.3'
